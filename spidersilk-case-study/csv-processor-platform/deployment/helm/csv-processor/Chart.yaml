@@ -1,0 +1,6 @@
+apiVersion: v2
+name: csv-processor
+description: A cloud-native Helm Chart deploying an Nginx sidecar architecture paired with a Python Flask CSV engine sharing static disk spaces.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "csv-processor.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "csv-processor.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "csv-processor.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "csv-processor.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "csv-processor.fullname" . }}
+      volumes:
+        # High-velocity localized volume block mapping shared memory areas
+        - name: shared-public-storage
+          emptyDir: {}
+        - name: nginx-config-volume
+          configMap:
+            name: {{ include "csv-processor.fullname" . }}-nginx-config
+
+      containers:
+        # Container 1: Python Processing Engine
+        - name: processing-engine
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: S3_BUCKET_NAME
+              value: {{ .Values.aws.s3BucketName | quote }}
+            - name: AWS_REGION
+              value: {{ .Values.aws.region | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: shared-public-storage
+              mountPath: /app/public
+
+        # Container 2: Nginx Front Facing Sidecar Proxy
+        - name: nginx-proxy
+          image: "nginx:1.25-alpine"
+          ports:
+            - containerPort: 80
+              name: http-web
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: shared-public-storage
+              mountPath: /usr/share/nginx/html/assets
+            - name: nginx-config-volume
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: nginx.conf

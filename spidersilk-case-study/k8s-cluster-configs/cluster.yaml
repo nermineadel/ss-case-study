@@ -1,0 +1,75 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: Cluster
+metadata:
+  name: ss-cluster.example.com
+spec:
+  api:
+    loadBalancer:
+      type: Public
+  authorization:
+    rbac: {}
+  channel: stable
+  cloudProvider: aws
+  configBase: s3://ss-kops-state-store-bucket/ss-cluster.example.com
+  # --- Etcd Quorum across 3 AZs ---
+  etcdClusters:
+  - cpuRequest: 200m
+    etcdMembers:
+    - instanceGroup: master-us-east-1a
+      name: a
+    - instanceGroup: master-us-east-1b
+      name: b
+    - instanceGroup: master-us-east-1c
+      name: c
+    memoryRequest: 100Mi
+    name: main
+  - cpuRequest: 100m
+    etcdMembers:
+    - instanceGroup: master-us-east-1a
+      name: a
+    - instanceGroup: master-us-east-1b
+      name: b
+    - instanceGroup: master-us-east-1c
+      name: c
+    memoryRequest: 100Mi
+    name: events
+  iam:
+    allowContainerRegistry: true
+  kubernetesApiAccess:
+  - 0.0.0.0/0
+  kubernetesVersion: 1.30.0
+  masterPublicName: api.ss-cluster.example.com
+  networking:
+    calico: {}
+  nonMasqueradeCIDR: 100.64.0.0/10
+  sshAccess:
+  - 0.0.0.0/0
+  # --- Subnets for 3 AZs ---
+  subnets:
+  - cidr: 172.20.32.0/19
+    name: us-east-1a
+    type: Public
+    zone: us-east-1a
+  - cidr: 172.20.64.0/19
+    name: us-east-1b
+    type: Public
+    zone: us-east-1b
+  - cidr: 172.20.96.0/19
+    name: us-east-1c
+    type: Public
+    zone: us-east-1c
+  topology:
+    dns:
+      type: Public
+    masters: public
+    nodes: public
+  clusterAutoscaler:
+    enabled: true
+    expander: least-waste
+    balanceSimilarNodeGroups: true # Vital for balancing scaling across AZs
+    skipNodesWithLocalStorage: false
+
+  nodeTerminationHandler:
+    enabled: true
+    enableSQSTerminationDraining: true
+    managedASGTag: "aws-node-termination-handler/managed"      

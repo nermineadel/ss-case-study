@@ -1,0 +1,35 @@
+global:
+  environment: staging
+
+replicaCount: 2
+
+image:
+  repository: https://123456789012.dkr.ecr.us-east-1.amazonaws.com/csv-processor-app
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+serviceAccount:
+  create: true
+  iamRoleArn: "arn:aws:iam::123456789012:role/csv-processor-default-role"
+
+aws:
+  region: us-east-1
+  s3BucketName: "company-generic-csv-vault"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
+
+service:
+  type: ClusterIP
+  port: 80

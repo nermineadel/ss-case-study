@@ -1,0 +1,13 @@
+---
+env_identifier: staging
+target_k8s_namespace: app-csv-staging
+
+# Environment specific cluster topology size models
+app_replicas: 2
+hpa_min_pods: 2
+hpa_max_pods: 5
+hpa_cpu_trigger: 80
+
+# Storage variables
+s3_bucket_vault: "company-staging-csv-data-vault"
+iam_role_execution_arn: "arn:aws:iam::123456789012:role/irsa-csv-processor-staging"

@@ -1,0 +1,29 @@
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  labels:
+    kops.k8s.io/cluster: ss-cluster.example.com
+  name: nodes-spot
+spec:
+  role: Node
+  image: 099720109477/ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20231207
+  minSize: 3
+  maxSize: 30
+  subnets:
+  - us-east-1a
+  - us-east-1b
+  - us-east-1c
+  mixedInstancesPolicy:
+    instances:
+    - m5.large
+    - m5a.large
+    - m6i.large
+    - c5.large
+    onDemandBase: 0
+    onDemandAboveBase: 0
+    spotAllocationStrategy: capacity-optimized
+  taints:
+  - spotInstance=true:NoSchedule
+  nodeLabels:
+    kops.k8s.io/instancegroup: nodes-spot
+    kubernetes.io/lifecycle: spot

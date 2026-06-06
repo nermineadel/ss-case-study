@@ -1,0 +1,6 @@
+---
+# Globally inherited configuration blueprints
+global_project_name: csv-processor-platform
+global_aws_region: us-east-1
+global_image_repository: "123456789012.dkr.ecr.us-east-1.amazonaws.com/csv-processor"
+global_chart_path: "../helm/csv-processor"

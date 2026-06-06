@@ -1,0 +1,48 @@
+---
+- name: Execute Managed Cloud-Native Application Deployments via Helm
+  hosts: localhost
+  gather_facts: false
+
+  # Safety check validation layer enforcing environment targets
+  pre_tasks:
+    - name: Validate that environmental scopes are declared explicitly
+      ansible.builtin.fail:
+        msg: "Please pass a valid system target configuration! Append: -e 'target_env=staging' or 'target_env=production'"
+      when: target_env is not defined or (target_env != 'staging' and target_env != 'production')
+
+    - name: Dynamically import target-specific variable arrays
+      ansible.builtin.include_vars: "group_vars/{{ target_env }}.yml"
+
+  tasks:
+    - name: Ensure target Kubernetes execution namespace exists
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ target_k8s_namespace }}"
+        state: present
+
+    - name: Execute Structured Configuration Rollout using Helm Module
+      kubernetes.core.helm:
+        name: "csv-processor-{{ env_identifier }}"
+        chart_ref: "{{ global_chart_path }}"
+        release_namespace: "{{ target_k8s_namespace }}"
+        create_namespace: false
+        wait: true
+        timeout: "5m0s"
+        values:
+          global:
+            environment: "{{ env_identifier }}"
+          replicaCount: "{{ app_replicas }}"
+          image:
+            repository: "{{ global_image_repository }}"
+          serviceAccount:
+            iamRoleArn: "{{ iam_role_execution_arn }}"
+          aws:
+            region: "{{ global_aws_region }}"
+            s3BucketName: "{{ s3_bucket_vault }}"
+          hpa:
+            minReplicas: "{{ hpa_min_pods }}"
+            maxReplicas: "{{ hpa_max_pods }}"
+            targetCPUUtilizationPercentage: "{{ hpa_cpu_trigger }}"
+          service:
+            type: ClusterIP
